@@ -5,6 +5,7 @@
 #include <sstream>
 #include <vector>
 #include <iomanip>
+#include <string_view>
 
 using namespace std;
 
@@ -32,14 +33,16 @@ struct Book {
     Genre genre;
 };
 
-struct DeserializationResult {
-    bool success;
-    Book value;
-};
-
 ValidateData validateBook(const Book& book) {
     if (book.title.empty()) {
         return ValidateData::InvalidTitle;
+    }
+    else {
+        for (const char& c : book.title) {
+            if (c == ',') {
+                return ValidateData::InvalidTitle;
+            }
+        }
     }
     if (book.pages < 0) {
         return ValidateData::InvalidPages;
@@ -52,51 +55,33 @@ ValidateData validateBook(const Book& book) {
 }
 
 //Serialization
-/*bool serializeTitle(const Book& book, ostream& os) {
-    for (const char& c : book.title) {
-        if (c == ',') {
-            return false; // Проверяем наличие запятых в заголовке
-        }
-        os << c;
-    }
-    return true;
-}
-
-void serializePages(const Book& book, ostream& os) {
-    os << book.pages;
-}
-
-void serializeGenre(const Book& book, ostream& os) {
-    os << static_cast<int>(book.genre);
-}*/
-
 bool serializeBook(const Book& book, ostream& os) {
     ValidateData rezult = validateBook(book);
-    switch (rezult)
-    {
-    case ValidateData::Valid:
-        break;
-    case ValidateData::InvalidTitle:
-        cout << "Title is incorrect!";
-        return false;
-    case ValidateData::InvalidPages:
-        cout << "Pages field is incorrect!";
-        return false;
-    case ValidateData::InvalidGenre:
-        cout << "Genre field is incorrect!";
-        return false;
-    default:
-        cout << "Something went wrong!";
-        return false;
-    }
 
-    for (const char& c : book.title) {
-        if (c == ',') {
-            return false;
+    if (rezult != ValidateData::Valid) {
+        cout << "Error: ";
+        switch (rezult)
+        {
+        case ValidateData::Valid:
+            break;
+        case ValidateData::InvalidTitle:
+            cout << "Title is incorrect!";
+            break;
+        case ValidateData::InvalidPages:
+            cout << "Pages field is incorrect!";
+            break;
+        case ValidateData::InvalidGenre:
+            cout << "Genre field is incorrect!";
+            break;
+        default:
+            cout << "Something went wrong!";
+            break;
         }
-        os << c;
+        cout << endl;
+        return false;
     }
-
+    string titleStr(book.title.data());
+    os << titleStr;
     os << ",";
     os << book.pages;
     os << ",";
@@ -108,9 +93,10 @@ bool serializeBook(const Book& book, ostream& os) {
 
 //Deserialization
 string deserializeTitle(istream& is) {
-    string title;
-    getline(is, title, ',');
-    return title;
+    char titleBuffer[MAX_SIZE];
+    is.get(titleBuffer, MAX_SIZE, ',');
+    is.ignore(numeric_limits<streamsize>::max(), '\n');  //remove the rest of the line
+    return string(titleBuffer);
 }
 
 int deserializePages(istream& is) {
@@ -127,7 +113,9 @@ int deserializePages(istream& is) {
 Genre deserializeGenre(istream& is) {
     int genreInt;
     is >> genreInt;
-    return static_cast<Genre>(genreInt);
+    if (is.good()) {
+        return static_cast<Genre>(genreInt);
+    }
 }
 
 bool deserializeBook(Book& book, istream& is) {
@@ -135,10 +123,16 @@ bool deserializeBook(Book& book, istream& is) {
     int pages = deserializePages(is);
     Genre genre = deserializeGenre(is);
 
+    //remove the rest of the line
     is.ignore(numeric_limits<streamsize>::max(), '\n');
 
     if (!title.empty() && pages != -1 && static_cast<int>(genre) >= 0) {
-        copy(title.begin(), title.end(), book.title.begin());
+        if (title.size() <= book.title.size()) {
+            copy(title.begin(), title.end(), book.title.begin());
+        }
+        else {
+            return false;
+        }
         book.pages = pages;
         book.genre = genre;
         return true;
@@ -150,7 +144,7 @@ bool deserializeBook(Book& book, istream& is) {
     return true;
 }
 
-string genreToString(Genre genre) {
+string_view genreToString(Genre genre) {
     switch (genre) {
     case Genre::Classics:
         return "Classics";
@@ -169,54 +163,31 @@ string genreToString(Genre genre) {
     }
 }
 
-int main() 
-{
-    Book book_1{
-        "The Great Gatsby",
-        180,
-        Genre::Classics,
-    };
+void deserializeDataFromFile(const string& filename, vector<Book>& books) {
+    Book book_;
+    ifstream file;
+    file.open(filename);
 
-    Book book_2{
-        "The Hobbit",
-        300,
-        Genre::Fantasy,
-    };
+    if (file.is_open()) {
+        while (deserializeBook(book_, file)) {
+            books.push_back(book_);
+        }
+    }
+    else {
+        cout << "Unable to open file";
+    }
 
-    Book book_3{
-        "Murder on the Orient Express",
-        256,
-        Genre::Detective,
-    };
+    file.close();
+}
 
-    Book book_4{
-        "Dracula",
-        418,
-        Genre::Horror,
-    };
-
-    Book book_5{
-        "1984",
-        328,
-        Genre::Novel,
-    };
-
-    vector<Book> books;
-    books.push_back(book_1);
-    books.push_back(book_2);
-    books.push_back(book_3);
-    books.push_back(book_4);
-    books.push_back(book_5);
-
-    //Serialize fata in file
+void serealizeDataInFile(const string& filename, vector<Book> books) {
     ofstream file;
-    file.open("books.txt");
+    file.open(filename);
 
     if (file.is_open()) {
         for (int i = 0; i < books.size(); i++) {
             if (!serializeBook(books[i], file)) {
                 cout << "An error occuried during serialization!" << endl;
-                return -1;
             }
         }
 
@@ -225,84 +196,51 @@ int main()
     else {
         cout << "Unable to open file";
     }
+}
 
-    //Deserialize data in vector array "library"
-    vector<Book> library;
-    Book book_;
-
-    ifstream file1;
-    file1.open("books.txt");
-    
-    if (file1.is_open()) {
-        while (deserializeBook(book_, file1)) {
-            cout << "Book info:\tTitle: " << left << setw(50) << string(book_.title.data())
-                << "Pages: " << setw(7) << book_.pages
-                << "Genre: " << genreToString(book_.genre) << endl;
-            library.push_back(book_);
-        }
+void printFileData(vector<Book> books) {
+    for (Book book : books) {
+        cout << "Book info:  Title: " << left << setw(50) << string(book.title.data())
+            << "Pages: " << setw(7) << book.pages
+            << "Genre: " << genreToString(book.genre) << endl;
     }
-    else {
-        cout << "Unable to open file";
-    }
+}
 
-    file1.close();
+int main()
+{
+    vector<Book> books = {
+    {"The Great Gatsby", 180, Genre::Classics},
+    {"The Hobbit", 300, Genre::Fantasy},
+    {"Murder on the Orient Express", 256, Genre::Detective},
+    {"Dracula", 418, Genre::Horror},
+    {"1984", 328, Genre::Novel}
+    };
+
+    //Serialize data in file
+    serealizeDataInFile("books.txt", books);
+
+    //Deserialize data in vector array "books"
+    deserializeDataFromFile("books.txt", books);
+    printFileData(books);
 
     //Change data and add new books
-    if (!library.empty()) {
-        library[0].pages = 1200;
+    if (!books.empty()) {
+        books[0].pages = 1200;
     }
 
-    Book book_6{
-        "The Adventures of Sherlock Holmes",
-        307,
-        Genre::Detective,
-    };
+    Book book_6{ "The Adventures of Sherlock Holmes", 307, Genre::Detective };
+    Book book_7{ "Harry Potter and the Philosopher's Stone", 320, Genre::Fantasy };
 
-    Book book_7{
-        "Harry Potter and the Philosopher's Stone",
-        320,
-        Genre::Fantasy,
-    };
-
-    library.push_back(book_6);
-    library.push_back(book_7);
+    books.push_back(book_6);
+    books.push_back(book_7);
 
     //Serealize data again in file
-    ofstream file2;
-    file2.open("books.txt");
-
-    if (file2.is_open()) {
-        for (int i = 0; i < library.size(); i++) {
-            if (!serializeBook(library[i], file2)) {
-                cout << "An error occuried during serialization!" << endl;
-                return -1;
-            }
-        }
-
-        file2.close();
-    }
-    else {
-        cout << "Unable to open file";
-    }
+    serealizeDataInFile("books.txt", books);
 
     //Show changes in console
-    ifstream file3;
-    file3.open("books.txt");
-
-    if (file3.is_open()) {
-        cout << "\n\t\t\t\t\t-----Changes in file-----\n";
-        while (deserializeBook(book_, file3)) {
-            cout << "Book info:\tTitle: " << left << setw(50) << string(book_.title.data())
-                << "Pages: " << setw(7) << book_.pages
-                << "Genre: " << genreToString(book_.genre) << endl;
-            library.push_back(book_);
-        }
-    }
-    else {
-        cout << "Unable to open file";
-    }
-
-    file3.close();
+    deserializeDataFromFile("books.txt", books);
+    cout << "\n\t\t\t\t\t-----Changes in file-----\n";
+    printFileData(books);
 
     return 0;
 }
