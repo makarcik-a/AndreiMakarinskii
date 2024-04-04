@@ -1,0 +1,5 @@
+﻿  lab2_sorting.cpp
+C:\Users\Andre\Desktop\USM\ASDC_lab\lab2_sorting\lab2_sorting\lab2_sorting.cpp(212,12): warning C4244: инициализация: преобразование "double" в "int", возможна потеря данных
+C:\Users\Andre\Desktop\USM\ASDC_lab\lab2_sorting\lab2_sorting\lab2_sorting.cpp(240,12): warning C4244: инициализация: преобразование "double" в "int", возможна потеря данных
+C:\Users\Andre\Desktop\USM\ASDC_lab\lab2_sorting\lab2_sorting\lab2_sorting.cpp(282,12): warning C4244: аргумент: преобразование "time_t" в "unsigned int", возможна потеря данных
+  lab2_sorting.vcxproj -> C:\Users\Andre\source\repos\ASDC_lab\x64\Debug\lab2_sorting.exe
