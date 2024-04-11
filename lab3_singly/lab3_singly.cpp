@@ -162,42 +162,15 @@ void assertNoCycles(BookList* list) {
 }
 
 void printSearchedResult(const FindNodeResult& result, const std::array<char, MAX_SIZE>& searchValue, SearchField searchField) {
-    switch (searchField)
-    {
-    case SearchField::Title:
-        if (result.current) {
-            cout << "Book with title \"" << searchValue.data() << "\" has found." << endl;
-            if (result.previous)
-                cout << "Previous book is: \"" << result.previous->data.title.data() << "\"." << endl;
-            else
-                cout << "Previous book not found." << endl;
-        }
+    if (result.current) {
+        cout << "Book with criterion \"" << searchValue.data() << "\" has found." << endl;
+        if (result.previous)
+            cout << "Previous book is: \"" << result.previous->data.title.data() << "\"." << endl;
         else
-            cout << "Book with title \"" << searchValue.data() << "\" not found.";
-        break;
-    case SearchField::Pages:
-        if (result.current) {
-            cout << "Book with " << stoi(searchValue.data()) << " pages has found, Title: \"" << result.current->data.title.data() << "\"." << endl;
-            if (result.previous)
-                cout << "Previous book is: \"" << result.previous->data.title.data() << "\" with " << result.previous->data.pages << " pages." << endl;
-            else
-                cout << "Previous book not found." << endl;
-        }
-        else
-            cout << "Book with " << stoi(searchValue.data()) << " pages not found.";
-        break;
-    case SearchField::Genre:
-        if (result.current) {
-            cout << "Book with genre \"" << searchValue.data() << "\" has found, Title: \"" << result.current->data.title.data() << "\"." << endl;
-            if (result.previous)
-                cout << "Previous book is: \"" << result.previous->data.title.data() << "\" with \"" << genreToString(result.previous->data.genre) << "\" genre." << endl;
-            else
-                cout << "Previous book not found." << endl;
-        }
-        else
-            cout << "Book with genre \"" << searchValue.data() << "\" not found.";
-        break;
+            cout << "Previous book not found." << endl;
     }
+    else
+        cout << "Book with criterion \"" << searchValue.data() << "\" not found.";
 }
 
 int main() 
@@ -228,25 +201,31 @@ int main()
     assertNoCycles(&library);
 
     cout << endl;
-    
-    SearchField field = SearchField::Title;
-    array<char, MAX_SIZE> search = { "1984" };
-    FindNodeResult result = library.findByField(search, field);
-    printSearchedResult(result, search, field);
+
+    {
+        SearchField field = SearchField::Title;
+        array<char, MAX_SIZE> search = { "1984" };
+        FindNodeResult result = library.findByField(search, field);
+        printSearchedResult(result, search, field);
+    }
 
     cout << endl;
 
-    field = SearchField::Pages;
-    search = { "320" };
-    result = library.findByField(search, field);
-    printSearchedResult(result, search, field);
+    {
+        SearchField field = SearchField::Pages;
+        array<char, MAX_SIZE>search = { "320" };
+        FindNodeResult result = library.findByField(search, field);
+        printSearchedResult(result, search, field);
+    }
 
     cout << endl;
 
-    field = SearchField::Genre;
-    search = { "Horror" } ;
-    result = library.findByField(search, field);
-    printSearchedResult(result, search, field);
+    {
+        SearchField field = SearchField::Genre;
+        array<char, MAX_SIZE>search = { "Horror" };
+        FindNodeResult result = library.findByField(search, field);
+        printSearchedResult(result, search, field);
+    }
 
     cout << endl;
 
