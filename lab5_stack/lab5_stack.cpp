@@ -61,11 +61,10 @@ Book* getLastElement(std::vector<Book>& stack) {
 }
 
 void pop(std::vector<Book>& stack) {
-    if (isEmpty(stack)) {
-        std::cout << "Error: Stack is empty." << std::endl;
-        return;
+    Book* topBook = getLastElement(stack);
+    if (topBook != nullptr) {
+        stack.pop_back();
     }
-    stack.pop_back();
 }
 
 
